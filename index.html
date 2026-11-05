@@ -1,0 +1,520 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Radar Quote</title>
+<meta name="theme-color" content="#15201C">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: lavagna delle quote. Fascia di controllo in alto, tre colonne di rischio + schedina laterale; su telefono tutto in colonna. */
+:root{
+  --bg:#EDF0EB; --surface:#FFFFFF; --sunk:#F5F7F3; --ink:#15201C; --muted:#5A6964; --line:#D3DBD4;
+  --accent:#2747C9; --accent-ink:#FFFFFF;
+  --low:#2C7A4B; --mid:#A86E14; --high:#BE3E2A; --value:#2747C9;
+  --display:"Barlow Condensed","Arial Narrow",Arial,sans-serif;
+  --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0E1412; --surface:#161F1C; --sunk:#121A17; --ink:#E4ECE8; --muted:#94A49E; --line:#2A3632;
+  --accent:#93A6FF; --accent-ink:#0E1412; --low:#6CCB8F; --mid:#E6B35C; --high:#F28B74; --value:#93A6FF; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0E1412; --surface:#161F1C; --sunk:#121A17; --ink:#E4ECE8; --muted:#94A49E; --line:#2A3632;
+  --accent:#93A6FF; --accent-ink:#0E1412; --low:#6CCB8F; --mid:#E6B35C; --high:#F28B74; --value:#93A6FF; color-scheme:dark}
+
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+img{max-width:100%}
+html{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.5}
+.wrap{max-width:1320px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 48px}
+h1,h2,h3{font-family:var(--display);font-weight:700;letter-spacing:.01em;margin:0;text-wrap:balance;line-height:1.05}
+h1{font-size:clamp(2.2rem,5vw,3.2rem);text-transform:uppercase}
+h2{font-size:1.55rem;text-transform:uppercase}
+.lede{color:var(--muted);max-width:68ch;margin:.4rem 0 0}
+.eyebrow{font-family:var(--mono);font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.num{font-variant-numeric:tabular-nums}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+header.top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:16px;border-bottom:3px solid var(--ink);padding-bottom:14px}
+.status{font-family:var(--mono);font-size:.8rem;color:var(--muted);text-align:right}
+
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:16px}
+.controls{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin-top:18px}
+.field{display:flex;flex-direction:column;gap:5px;min-width:0}
+.field label,.lab{font-family:var(--mono);font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+input[type=number],input[type=text],input[type=password],select,textarea{background:var(--sunk);border:1px solid var(--line);border-radius:4px;padding:8px 10px;width:100%;min-width:0}
+textarea{font-family:var(--mono);font-size:.78rem;min-height:110px;resize:vertical}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:1px solid var(--line);background:var(--sunk);border-radius:999px;padding:5px 12px;cursor:pointer;font-size:.86rem}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.toggle{display:flex;align-items:center;gap:8px;cursor:pointer;font-size:.9rem}
+.btn{border:1px solid var(--ink);background:var(--ink);color:var(--bg);border-radius:4px;padding:8px 14px;cursor:pointer;font-weight:600}
+.btn.ghost{background:transparent;color:var(--ink)}
+.btn.small{padding:4px 10px;font-size:.82rem}
+a{color:var(--accent)}
+
+.source{margin-top:14px}
+.source summary{cursor:pointer;font-weight:600}
+.source-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;margin-top:12px}
+.steps{margin:0;padding-left:1.2rem;color:var(--muted);font-size:.9rem;display:flex;flex-direction:column;gap:4px}
+.urlbox{font-family:var(--mono);font-size:.74rem;word-break:break-all;background:var(--sunk);border:1px dashed var(--line);border-radius:4px;padding:8px}
+.msg{font-size:.88rem;margin-top:6px}
+.msg.err{color:var(--high)} .msg.ok{color:var(--low)}
+
+.notice{margin-top:14px;padding:10px 14px;border-left:4px solid var(--mid);background:var(--surface);font-size:.88rem;color:var(--muted)}
+.notice strong{color:var(--ink)}
+
+.layout{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:20px;margin-top:22px;align-items:start}
+@media (max-width:980px){.layout{grid-template-columns:minmax(0,1fr)}}
+.tiers{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+@media (max-width:1180px){.tiers{grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}}
+.tier{display:flex;flex-direction:column;gap:10px;min-width:0}
+.tier-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px;border-bottom:2px solid currentColor;padding-bottom:4px}
+.tier-head .rng{font-family:var(--mono);font-size:.74rem;color:var(--muted)}
+.t-low{color:var(--low)} .t-mid{color:var(--mid)} .t-high{color:var(--high)}
+.tier-head h2{color:inherit}
+.empty{color:var(--muted);font-size:.9rem;padding:12px;border:1px dashed var(--line);border-radius:6px}
+
+.pick{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:12px;display:flex;flex-direction:column;gap:8px;position:relative}
+.pick.value{border-color:var(--value);box-shadow:inset 3px 0 0 var(--value)}
+.pick .ev{font-size:.82rem;color:var(--muted);display:flex;justify-content:space-between;gap:8px}
+.pick .match{font-weight:600;font-size:.95rem;line-height:1.3}
+.pick .row{display:flex;justify-content:space-between;align-items:flex-end;gap:10px}
+.pick .sel{font-family:var(--display);font-size:1.35rem;font-weight:600;line-height:1.1}
+.pick .odd{font-family:var(--display);font-size:2rem;font-weight:700;line-height:1}
+.pick .book{font-size:.78rem;color:var(--muted);text-align:right}
+.metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;font-size:.78rem}
+.metrics div{background:var(--sunk);border-radius:4px;padding:5px 7px}
+.metrics b{display:block;font-family:var(--mono);font-size:.86rem;font-weight:500}
+.pos{color:var(--low)} .neg{color:var(--high)}
+.badge{font-family:var(--mono);font-size:.68rem;letter-spacing:.08em;text-transform:uppercase;border-radius:3px;padding:2px 6px;background:var(--value);color:var(--accent-ink)}
+.win{font-size:.84rem}
+.pick .foot{display:flex;justify-content:space-between;align-items:center;gap:8px}
+
+.multis{margin-top:28px}
+.multi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;margin-top:12px}
+.multi ol{margin:4px 0 0;padding-left:1.1rem;font-size:.86rem;display:flex;flex-direction:column;gap:3px}
+.multi ol li span{color:var(--muted)}
+
+aside .slip{position:sticky;top:calc(env(safe-area-inset-top,0px) + 12px);display:flex;flex-direction:column;gap:10px}
+.slip-item{display:grid;grid-template-columns:1fr auto;gap:4px 8px;border-bottom:1px solid var(--line);padding-bottom:8px;font-size:.85rem}
+.slip-item .x{background:none;border:none;color:var(--muted);cursor:pointer;font-size:1rem}
+.slip-item input{width:84px;padding:4px 6px}
+.totals{font-family:var(--mono);font-size:.84rem;display:flex;flex-direction:column;gap:3px}
+.totals .over{color:var(--high);font-family:var(--body);font-weight:600}
+
+footer{margin-top:36px;border-top:1px solid var(--line);padding-top:14px;color:var(--muted);font-size:.84rem;display:flex;flex-direction:column;gap:6px;max-width:90ch}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <div class="eyebrow">Analisi quote · singole e multiple</div>
+      <h1>Radar Quote</h1>
+      <p class="lede">Confronta le quote di più bookmaker, toglie il margine, stima la probabilità di ogni esito e ti propone giocate a basso, medio e alto rischio con vincita e valore atteso.</p>
+    </div>
+    <div class="status" id="status">—</div>
+  </header>
+
+  <section class="controls panel" aria-label="Filtri">
+    <div class="field">
+      <label for="sportSel">Sport / competizione</label>
+      <select id="sportSel"></select>
+    </div>
+    <div class="field">
+      <label for="marketSel">Mercato</label>
+      <select id="marketSel">
+        <option value="all">Tutti</option>
+        <option value="h2h">Esito finale (1X2 / testa a testa)</option>
+        <option value="totals">Under / Over</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="stake">Puntata per giocata (€)</label>
+      <input id="stake" type="number" min="1" step="1" value="5">
+    </div>
+    <div class="field">
+      <label for="budget">Budget massimo (€)</label>
+      <input id="budget" type="number" min="1" step="1" value="50">
+    </div>
+    <div class="field">
+      <span class="lab">Filtri</span>
+      <label class="toggle"><input id="onlyValue" type="checkbox"> Solo value bet</label>
+    </div>
+  </section>
+
+  <details class="source panel" id="sourceBox">
+    <summary>Quote: <span id="sourceName">dati di esempio</span></summary>
+    <div class="source-grid">
+      <div style="display:flex;flex-direction:column;gap:10px;min-width:0">
+        <ol class="steps">
+          <li>Crea una chiave gratuita su <a href="https://the-odds-api.com/" target="_blank" rel="noopener">the-odds-api.com</a>.</li>
+          <li>Incollala qui sotto e premi "Carica competizioni".</li>
+          <li>Spunta quelle che ti interessano e premi "Aggiorna quote".</li>
+        </ol>
+        <div class="field"><label for="apiKey">Chiave API</label><input id="apiKey" type="password" autocomplete="off" placeholder="la tua chiave"></div>
+        <div class="field"><label for="region">Bookmaker</label>
+          <select id="region"><option value="eu">Europei</option><option value="uk">Regno Unito</option><option value="eu,uk">Europei + Regno Unito (doppio dei crediti)</option></select></div>
+        <button class="btn ghost" id="loadSports" type="button">Carica competizioni</button>
+        <p class="msg" style="color:var(--muted)">Ogni competizione aggiornata consuma 2 crediti (4 con entrambe le regioni). Caricare l'elenco è gratis. La chiave resta solo su questo telefono.</p>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px;min-width:0">
+        <div class="field"><span class="lab">Competizioni da analizzare</span>
+          <input id="sportFilter" type="text" placeholder="Cerca: serie a, nba, atp…">
+          <div id="sportList" style="max-height:260px;overflow:auto;border:1px solid var(--line);border-radius:4px;padding:8px;display:flex;flex-direction:column;gap:4px;background:var(--sunk)"><span style="color:var(--muted);font-size:.86rem">Premi "Carica competizioni" per vedere l'elenco.</span></div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn" id="refresh" type="button">Aggiorna quote</button>
+          <button class="btn ghost" id="useDemo" type="button">Dati di esempio</button>
+        </div>
+        <div class="msg" id="pasteMsg" role="status"></div>
+      </div>
+    </div>
+  </details>
+
+  <div class="notice" id="demoNotice"><strong>Stai vedendo dati di esempio:</strong> partite e quote sono inventate per mostrarti come funziona l'app. Apri "Quote" qui sopra per caricare quelle reali.</div>
+
+  <div class="layout">
+    <main>
+      <div class="tiers" id="tiers"></div>
+      <section class="multis">
+        <h2>Multiple proposte</h2>
+        <p class="lede">Combinano esiti di partite diverse. La probabilità si moltiplica: anche tre favoriti insieme perdono spesso.</p>
+        <div class="multi-grid" id="multis"></div>
+      </section>
+    </main>
+    <aside>
+      <div class="slip panel">
+        <h2>La tua schedina</h2>
+        <div id="slip"></div>
+        <div class="totals" id="slipTotals"></div>
+      </div>
+    </aside>
+  </div>
+
+  <footer>
+    <div><strong>Come leggere i numeri.</strong> <em>Probabilità stimata</em>: media delle probabilità dei bookmaker dopo aver tolto il loro margine. <em>Valore atteso</em>: quanto rende in media ogni euro puntato nel lungo periodo; se è negativo, a lungo andare si perde. <em>Value bet</em>: la miglior quota trovata paga più della probabilità stimata. <em>Puntata suggerita</em>: un quarto del criterio di Kelly, solo sulle value bet, mai oltre il 5% del budget.</div>
+    <div>Le quote dei bookmaker esteri servono da riferimento: prima di giocare controlla la quota sul tuo bookmaker con licenza ADM. Nessuna stima garantisce una vincita.</div>
+    <div>Gioco riservato ai maggiori di 18 anni. Se il gioco diventa un problema: Telefono Verde Nazionale per le problematiche legate al gioco d'azzardo, 800 558822 (Istituto Superiore di Sanità), gratuito e anonimo.</div>
+  </footer>
+</div>
+
+<script>
+/*LOGIC-START*/
+const RISK = {low:{min:0.6,label:"Basso rischio"}, mid:{min:0.35,label:"Medio rischio"}, high:{min:0,label:"Alto rischio"}};
+function riskOf(p){ return p>=RISK.low.min ? "low" : p>=RISK.mid.min ? "mid" : "high"; }
+
+function outcomeLabel(ev, market, name, point){
+  if(market==="totals") return (name==="Over"?"Over ":"Under ")+point;
+  if(name==="Draw") return "X · Pareggio";
+  if(name===ev.home_team) return "1 · "+name;
+  if(name===ev.away_team) return "2 · "+name;
+  return name;
+}
+
+function analyzeEvents(events){
+  const picks=[];
+  for(const ev of events){
+    const groups={};
+    for(const bk of ev.bookmakers||[]){
+      for(const m of bk.markets||[]){
+        if(m.key!=="h2h" && m.key!=="totals") continue;
+        const byPoint={};
+        for(const o of m.outcomes||[]){
+          const pt = m.key==="totals" ? String(o.point) : "";
+          (byPoint[pt]=byPoint[pt]||[]).push(o);
+        }
+        for(const pt in byPoint){
+          const outs=byPoint[pt];
+          if(outs.length<2 || outs.some(o=>!(Number(o.price)>1))) continue;
+          const inv=outs.map(o=>1/Number(o.price));
+          const sum=inv.reduce((a,b)=>a+b,0);
+          const gk=m.key+"|"+pt;
+          const g=groups[gk]||(groups[gk]={market:m.key,point:pt,books:0,margins:[],outcomes:{}});
+          g.books++; g.margins.push(sum-1);
+          outs.forEach((o,i)=>{
+            const r=g.outcomes[o.name]||(g.outcomes[o.name]={name:o.name,fair:[],prices:[],best:0,bestBook:""});
+            r.fair.push(inv[i]/sum); r.prices.push(Number(o.price));
+            if(Number(o.price)>r.best){ r.best=Number(o.price); r.bestBook=bk.title||bk.key; }
+          });
+        }
+      }
+    }
+    for(const gk in groups){
+      const g=groups[gk];
+      const margin=g.margins.reduce((a,b)=>a+b,0)/g.margins.length;
+      for(const n in g.outcomes){
+        const r=g.outcomes[n];
+        const p=r.fair.reduce((a,b)=>a+b,0)/r.fair.length;
+        const avg=r.prices.reduce((a,b)=>a+b,0)/r.prices.length;
+        const ev_=p*r.best-1;
+        picks.push({
+          id:ev.id+"|"+gk+"|"+n, eventId:ev.id, sport:ev.sport_title||ev.sport_key, sportKey:ev.sport_key,
+          match:ev.home_team+" – "+ev.away_team, start:ev.commence_time,
+          market:g.market, point:g.point, name:n, label:outcomeLabel(ev,g.market,n,g.point),
+          p, best:r.best, bestBook:r.bestBook, avg, books:r.prices.length, margin,
+          ev:ev_, value: ev_>0.02 && r.prices.length>=3, risk:riskOf(p)
+        });
+      }
+    }
+  }
+  return picks;
+}
+
+function kellyStake(pick,budget){
+  if(!(pick.ev>0)) return 0;
+  const f=(pick.p*pick.best-1)/(pick.best-1);
+  return Math.max(0, Math.min(budget*0.05, budget*f/4));
+}
+
+function buildMultiples(picks){
+  const recipes=[
+    {key:"prudente", title:"Multipla prudente", desc:"I tre esiti più probabili di partite diverse.", legs:3, filter:p=>p.p>=0.6, sort:(a,b)=>b.p-a.p},
+    {key:"equilibrata", title:"Multipla equilibrata", desc:"Tre esiti tra il 40% e il 70%, scelti per valore atteso.", legs:3, filter:p=>p.p>=0.4&&p.p<0.7, sort:(a,b)=>b.ev-a.ev},
+    {key:"audace", title:"Multipla audace", desc:"Quattro esiti meno probabili ma con le quote più convenienti.", legs:4, filter:p=>p.p>=0.25&&p.p<0.55, sort:(a,b)=>b.ev-a.ev}
+  ];
+  const out=[];
+  for(const r of recipes){
+    const pool=picks.filter(r.filter).sort(r.sort);
+    const legs=[], used=new Set();
+    for(const p of pool){ if(used.has(p.eventId)) continue; used.add(p.eventId); legs.push(p); if(legs.length===r.legs) break; }
+    if(legs.length<r.legs) continue;
+    const prob=legs.reduce((a,l)=>a*l.p,1);
+    const odd=legs.reduce((a,l)=>a*l.best,1);
+    out.push({...r, legs, prob, odd, ev:prob*odd-1, risk:riskOf(prob)});
+  }
+  return out;
+}
+
+function demoEvents(){
+  let s=20261105; const rnd=()=>{ s=(s*1664525+1013904223)%4294967296; return s/4294967296; };
+  const books=["Book A","Book B","Book C","Book D","Book E"];
+  const base=Date.UTC(2026,10,8,14,0);
+  const list=[];
+  const mk=(sportKey,sportTitle,home,away,ph,pd,totalPoint,pOver,dayOffset,hour)=>{
+    const pa=1-ph-pd; const t=new Date(base+dayOffset*864e5+hour*36e5).toISOString();
+    const ev={id:sportKey+"-"+home+"-"+away,sport_key:sportKey,sport_title:sportTitle,commence_time:t,home_team:home,away_team:away,bookmakers:[]};
+    books.forEach((b,bi)=>{
+      const marg=1.04+rnd()*0.04;
+      const noise=()=>1+(rnd()-0.5)*0.08;
+      const gen=(ps,names,extra)=>{
+        const raw=ps.map(p=>p*noise()); const sm=raw.reduce((a,c)=>a+c,0);
+        return names.map((n,i)=>Object.assign({name:n,price:Math.max(1.01,Math.round(100/((raw[i]/sm)*marg))/100)},extra||{}));
+      };
+      const markets=[];
+      if(pd>0) markets.push({key:"h2h",outcomes:gen([ph,pd,pa],[home,"Draw",away])});
+      else markets.push({key:"h2h",outcomes:gen([ph,pa],[home,away])});
+      if(totalPoint) markets.push({key:"totals",outcomes:gen([pOver,1-pOver],["Over","Under"],{point:totalPoint})});
+      if(bi===((list.length*3)%5)) markets[0].outcomes.forEach(o=>{ if(rnd()<0.45) o.price=Math.round(o.price*1.11*100)/100; });
+      ev.bookmakers.push({key:b.toLowerCase().replace(" ",""),title:b,markets});
+    });
+    list.push(ev);
+  };
+  const SA="soccer_italy_serie_a", PL="soccer_epl", CL="soccer_uefa_champs_league";
+  mk(SA,"Serie A","Inter","Napoli",0.47,0.27,2.5,0.52,0,19.75);
+  mk(SA,"Serie A","Juventus","Roma",0.50,0.28,2.5,0.44,1,1);
+  mk(SA,"Serie A","Atalanta","Lecce",0.70,0.18,2.5,0.62,0,0);
+  mk(SA,"Serie A","Torino","Bologna",0.36,0.31,2.5,0.42,1,4);
+  mk(SA,"Serie A","Fiorentina","Cagliari",0.58,0.25,2.5,0.50,1,-2);
+  mk(PL,"Premier League","Arsenal","Everton",0.72,0.17,2.5,0.58,0,1.5);
+  mk(PL,"Premier League","Chelsea","Liverpool",0.34,0.25,2.5,0.63,0,3.5);
+  mk(PL,"Premier League","Brighton","Brentford",0.48,0.26,2.5,0.57,1,0);
+  mk(CL,"Champions League","Real Madrid","Benfica",0.66,0.19,2.5,0.64,3,7);
+  mk(CL,"Champions League","Bayern Monaco","PSV",0.74,0.15,3.5,0.47,3,7);
+  mk("basketball_nba","NBA","Boston Celtics","Detroit Pistons",0.78,0,224.5,0.51,0,11);
+  mk("basketball_nba","NBA","LA Lakers","Denver Nuggets",0.43,0,231.5,0.49,1,12.5);
+  mk("basketball_euroleague","Eurolega","Olimpia Milano","Fenerbahce",0.46,0,162.5,0.50,4,6.5);
+  mk("tennis_atp_finals","ATP Finals","Giocatore A","Giocatore B",0.64,0,0,0,1,0);
+  mk("tennis_atp_finals","ATP Finals","Giocatore C","Giocatore D",0.52,0,0,0,2,6);
+  return list;
+}
+/*LOGIC-END*/
+
+
+
+const $=id=>document.getElementById(id);
+const eur=n=>n.toLocaleString("it-IT",{style:"currency",currency:"EUR"});
+const pct=n=>(n*100).toLocaleString("it-IT",{maximumFractionDigits:1})+"%";
+const odd=n=>n.toLocaleString("it-IT",{minimumFractionDigits:2,maximumFractionDigits:2});
+const store={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}}};
+
+let events=demoEvents(), isDemo=true, risk="all", slip=[];
+let picksAll=[];
+
+function fmtDate(iso){ try{ return new Date(iso).toLocaleString("it-IT",{weekday:"short",day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"}); }catch(e){ return ""; } }
+function esc(s){ return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+
+function refreshSports(){
+  const sel=$("sportSel"), cur=sel.value;
+  const sports=[...new Map(events.map(e=>[e.sport_key,e.sport_title||e.sport_key])).entries()];
+  sel.innerHTML='<option value="all">Tutti gli sport</option>'+sports.map(([k,t])=>`<option value="${esc(k)}">${esc(t)}</option>`).join("");
+  if([...sel.options].some(o=>o.value===cur)) sel.value=cur;
+}
+
+function pickCard(p,stake,budget){
+  const win=stake*p.best, k=kellyStake(p,budget);
+  return `<article class="pick${p.value?" value":""}">
+    <div class="ev"><span>${esc(p.sport)} · ${esc(fmtDate(p.start))}</span>${p.value?'<span class="badge">Value</span>':""}</div>
+    <div class="match">${esc(p.match)}</div>
+    <div class="row"><div class="sel">${esc(p.label)}</div><div><div class="odd num">${odd(p.best)}</div></div></div>
+    <div class="book">miglior quota su ${esc(p.bestBook)} · ${p.books} bookmaker</div>
+    <div class="metrics num">
+      <div>Prob. stimata<b>${pct(p.p)}</b></div>
+      <div>Quota media<b>${odd(p.avg)}</b></div>
+      <div>Valore atteso<b class="${p.ev>=0?"pos":"neg"}">${p.ev>=0?"+":""}${pct(p.ev)}</b></div>
+    </div>
+    <div class="foot">
+      <span class="win num">${eur(stake)} → vinci ${eur(win)}${k>0?` · suggerita ${eur(k)}`:""}</span>
+      <button class="btn small ghost" type="button" data-add="${esc(p.id)}">+ Schedina</button>
+    </div>
+  </article>`;
+}
+
+function render(){
+  const stake=Math.max(0,Number($("stake").value)||0), budget=Math.max(0,Number($("budget").value)||0);
+  const sport=$("sportSel").value, market=$("marketSel").value, onlyV=$("onlyValue").checked;
+  picksAll=analyzeEvents(events);
+  let picks=picksAll.filter(p=>(sport==="all"||p.sportKey===sport)&&(market==="all"||p.market===market)&&(!onlyV||p.value));
+  const nEv=new Set(picks.map(p=>p.eventId)).size;
+  $("status").innerHTML=`${nEv} eventi · ${picks.length} esiti<br>${picks.filter(p=>p.value).length} value bet`;
+  const tiers=[["low","t-low","prob. ≥ 60%"],["mid","t-mid","prob. 35–60%"],["high","t-high","prob. < 35%"]];
+  $("tiers").innerHTML=tiers.map(([key,cls,rng])=>{
+    const list=picks.filter(p=>p.risk===key).sort((a,b)=>b.ev-a.ev).slice(0,10);
+    return `<section class="tier"><div class="tier-head ${cls}"><h2>${RISK[key].label}</h2><span class="rng">${rng}</span></div>
+      ${list.length?list.map(p=>pickCard(p,stake,budget)).join(""):'<div class="empty">Nessuna giocata con questi filtri.</div>'}</section>`;
+  }).join("");
+  const multis=buildMultiples(picks);
+  $("multis").innerHTML=multis.length?multis.map(m=>`<article class="pick multi${m.ev>0.02?" value":""}">
+      <div class="ev"><span class="t-${m.risk}" style="font-weight:600">${RISK[m.risk].label}</span>${m.ev>0.02?'<span class="badge">Value</span>':""}</div>
+      <div class="row"><div class="sel">${esc(m.title)}</div><div class="odd num">${odd(m.odd)}</div></div>
+      <div class="book" style="text-align:left">${esc(m.desc)}</div>
+      <ol>${m.legs.map(l=>`<li>${esc(l.label)} <span>· ${esc(l.match)} · ${odd(l.best)}</span></li>`).join("")}</ol>
+      <div class="metrics num"><div>Prob. stimata<b>${pct(m.prob)}</b></div><div>Esiti<b>${m.legs.length}</b></div>
+        <div>Valore atteso<b class="${m.ev>=0?"pos":"neg"}">${m.ev>=0?"+":""}${pct(m.ev)}</b></div></div>
+      <div class="foot"><span class="win num">${eur(stake)} → vinci ${eur(stake*m.odd)}</span>
+        <button class="btn small ghost" type="button" data-addm="${esc(m.key)}">+ Schedina</button></div>
+    </article>`).join(""):'<div class="empty">Servono più partite per comporre le multiple.</div>';
+  window.__multis=multis;
+  renderSlip();
+}
+
+function renderSlip(){
+  const budget=Math.max(0,Number($("budget").value)||0);
+  if(!slip.length){ $("slip").innerHTML='<div class="empty">Aggiungi giocate con "+ Schedina" per tenere il conto di quanto punti.</div>'; $("slipTotals").innerHTML=""; return; }
+  $("slip").innerHTML=slip.map((s,i)=>`<div class="slip-item"><div><b>${esc(s.label)}</b><br><span style="color:var(--muted)">${esc(s.match)} · quota ${odd(s.odd)}</span></div>
+    <button class="x" type="button" aria-label="Rimuovi" data-rm="${i}">✕</button>
+    <label class="num" style="display:flex;align-items:center;gap:6px">Puntata <input id="slipStake${i}" type="number" min="0" step="1" value="${s.stake}" data-st="${i}"> €</label>
+    <span class="num" style="align-self:center;text-align:right">vinci ${eur(s.stake*s.odd)}</span></div>`).join("");
+  const tot=slip.reduce((a,s)=>a+s.stake,0), exp=slip.reduce((a,s)=>a+s.stake*s.ev,0);
+  $("slipTotals").innerHTML=`<span>Totale puntato: ${eur(tot)} su ${eur(budget)}</span><span>Esito medio atteso: ${exp>=0?"+":""}${eur(exp)}</span>`+
+    (tot>budget?'<span class="over">Hai superato il budget che ti sei dato.</span>':"");
+}
+
+document.addEventListener("click",e=>{
+  const t=e.target.closest("[data-add],[data-addm],[data-rm]"); if(!t) return;
+  const stake=Math.max(0,Number($("stake").value)||0);
+  if(t.dataset.add){ const p=picksAll.find(x=>x.id===t.dataset.add); if(p && !slip.some(s=>s.id===p.id)) slip.push({id:p.id,label:p.label,match:p.match,odd:p.best,ev:p.ev,stake}); }
+  if(t.dataset.addm){ const m=(window.__multis||[]).find(x=>x.key===t.dataset.addm); if(m) slip.push({id:"m"+Date.now(),label:m.title+" ("+m.legs.length+" esiti)",match:m.legs.map(l=>l.label).join(" + "),odd:m.odd,ev:m.ev,stake}); }
+  if(t.dataset.rm!==undefined){ slip.splice(Number(t.dataset.rm),1); }
+  renderSlip();
+});
+document.addEventListener("input",e=>{ const i=e.target.dataset&&e.target.dataset.st; if(i!==undefined){ slip[Number(i)].stake=Math.max(0,Number(e.target.value)||0); const tot=slip.reduce((a,s)=>a+s.stake,0); renderSlipTotalsOnly(); } });
+function renderSlipTotalsOnly(){
+  const budget=Math.max(0,Number($("budget").value)||0);
+  const tot=slip.reduce((a,s)=>a+s.stake,0), exp=slip.reduce((a,s)=>a+s.stake*s.ev,0);
+  $("slipTotals").innerHTML=`<span>Totale puntato: ${eur(tot)} su ${eur(budget)}</span><span>Esito medio atteso: ${exp>=0?"+":""}${eur(exp)}</span>`+(tot>budget?'<span class="over">Hai superato il budget che ti sei dato.</span>':"");
+}
+
+["sportSel","marketSel","stake","budget","onlyValue"].forEach(id=>$(id).addEventListener(id==="stake"||id==="budget"?"input":"change",()=>{ store.set("rq_"+id, $(id).type==="checkbox"?$(id).checked:$(id).value); render(); }));
+
+// fonte dati: chiamate dirette a The Odds API
+const API="https://api.the-odds-api.com/v4";
+let sportsCatalog=[], chosen=new Set(JSON.parse(store.get("rq_chosen")||'["soccer_italy_serie_a"]'));
+function saveChosen(){ store.set("rq_chosen",JSON.stringify([...chosen])); }
+function setMsg(t,cls){ const m=$("pasteMsg"); m.className="msg"+(cls?" "+cls:""); m.textContent=t; }
+function renderSportList(){
+  const q=$("sportFilter").value.trim().toLowerCase();
+  const list=sportsCatalog.filter(s=>!q||(s.group+" "+s.title+" "+s.key).toLowerCase().includes(q));
+  if(!sportsCatalog.length) return;
+  $("sportList").innerHTML=list.map(s=>`<label class="toggle" style="font-size:.88rem"><input type="checkbox" data-sk="${esc(s.key)}" ${chosen.has(s.key)?"checked":""}> <span><b>${esc(s.group)}</b> · ${esc(s.title)}</span></label>`).join("")||'<span style="color:var(--muted);font-size:.86rem">Nessuna competizione trovata.</span>';
+}
+$("sportList").addEventListener("change",e=>{ const k=e.target.dataset.sk; if(!k) return; e.target.checked?chosen.add(k):chosen.delete(k); saveChosen(); });
+$("sportFilter").addEventListener("input",renderSportList);
+$("apiKey").addEventListener("input",()=>store.set("rq_key",$("apiKey").value.trim()));
+$("region").addEventListener("change",()=>store.set("rq_region",$("region").value));
+
+async function apiGet(path,params){
+  const key=$("apiKey").value.trim();
+  if(!key) throw new Error("Inserisci prima la chiave API.");
+  const qs=new URLSearchParams(Object.assign({apiKey:key},params||{}));
+  let res; try{ res=await fetch(`${API}${path}?${qs}`); }catch(e){ throw new Error("Connessione non riuscita. Controlla di essere online."); }
+  const remaining=res.headers.get("x-requests-remaining");
+  let data; try{ data=await res.json(); }catch(e){ data=null; }
+  if(!res.ok){ const m=data&&data.message?data.message:"errore "+res.status; throw new Error(res.status===401?"Chiave non valida o crediti esauriti ("+m+").":m); }
+  return {data,remaining};
+}
+$("loadSports").addEventListener("click",async()=>{
+  setMsg("Carico l'elenco…");
+  try{
+    const {data}=await apiGet("/sports/");
+    sportsCatalog=data.filter(s=>s.active&&!s.has_outrights).sort((a,b)=>(a.group+a.title).localeCompare(b.group+b.title));
+    store.set("rq_catalog",JSON.stringify(sportsCatalog));
+    renderSportList(); setMsg(sportsCatalog.length+" competizioni attive. Spunta quelle che vuoi.","ok");
+  }catch(e){ setMsg(e.message,"err"); }
+});
+$("refresh").addEventListener("click",async()=>{
+  const keys=[...chosen];
+  if(!$("apiKey").value.trim()){ setMsg("Inserisci prima la chiave API.","err"); return; }
+  if(!keys.length){ setMsg("Spunta almeno una competizione.","err"); return; }
+  const btn=$("refresh"); btn.disabled=true;
+  const all=[]; let remaining=null; const failed=[];
+  for(let i=0;i<keys.length;i++){
+    setMsg(`Scarico ${i+1} di ${keys.length}…`);
+    try{
+      const r=await apiGet(`/sports/${encodeURIComponent(keys[i])}/odds/`,{regions:$("region").value,markets:"h2h,totals",oddsFormat:"decimal"});
+      remaining=r.remaining??remaining;
+      (r.data||[]).filter(e=>e&&e.id&&Array.isArray(e.bookmakers)&&e.bookmakers.length).forEach(e=>all.push(e));
+    }catch(e){ failed.push(keys[i]+": "+e.message); if(/Chiave/.test(e.message)) break; }
+  }
+  btn.disabled=false;
+  if(!all.length){ setMsg(failed.length?failed.join(" · "):"Nessuna partita con quote nelle competizioni scelte in questo momento.","err"); return; }
+  events=all; isDemo=false; slip=[];
+  store.set("rq_events",JSON.stringify(all)); store.set("rq_updated",new Date().toISOString());
+  $("demoNotice").hidden=true;
+  $("sourceName").textContent="aggiornate alle "+new Date().toLocaleTimeString("it-IT",{hour:"2-digit",minute:"2-digit"});
+  setMsg(`${all.length} partite caricate.`+(remaining!=null?` Crediti rimasti: ${remaining}.`:"")+(failed.length?" Non riuscite: "+failed.join(" · "):""),"ok");
+  refreshSports(); render();
+});
+$("useDemo").addEventListener("click",()=>{ events=demoEvents(); isDemo=true; slip=[]; $("demoNotice").hidden=false; $("sourceName").textContent="dati di esempio"; setMsg(""); refreshSports(); render(); });
+
+// ripristino preferenze
+(function init(){
+  const k=store.get("rq_key"); if(k) $("apiKey").value=k;
+  const r=store.get("rq_region"); if(r) $("region").value=r;
+  ["stake","budget","marketSel"].forEach(id=>{ const v=store.get("rq_"+id); if(v) $(id).value=v; });
+  if(store.get("rq_onlyValue")==="true") $("onlyValue").checked=true;
+  try{ sportsCatalog=JSON.parse(store.get("rq_catalog")||"[]"); }catch(e){ sportsCatalog=[]; }
+  renderSportList();
+  try{
+    const saved=JSON.parse(store.get("rq_events")||"null");
+    if(Array.isArray(saved)&&saved.length){
+      events=saved; isDemo=false; $("demoNotice").hidden=true;
+      const u=store.get("rq_updated"); $("sourceName").textContent="ultimo aggiornamento "+(u?new Date(u).toLocaleString("it-IT",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"}):"");
+    }
+  }catch(e){}
+  refreshSports(); render();
+  if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(()=>{});
+})();
+</script>
+</body>
+</html>
